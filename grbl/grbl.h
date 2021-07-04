@@ -62,6 +62,7 @@
 #include "stepper.h"
 #include "jog.h"
 #include "sleep.h"
+#include "servo.h"
 
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:

@@ -44,7 +44,7 @@
 #define BAUD_RATE 115200
 
 // Axis array index values. Must start with 0 and be continuous.
-#define N_AXIS 5            // Number of axes (3 to 6)
+#define N_AXIS 6            // Number of axes (3 to 6)
 #define N_AXIS_LINEAR 3     // Number of linears axis
 
 #define AXIS_1 0        // Axis indexing value. Must start with 0 and be continuous.

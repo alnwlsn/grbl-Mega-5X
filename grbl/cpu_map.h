@@ -206,12 +206,21 @@
   //#define ENABLE_RAMPS_HW_LIMITS
 
   // Define spindle enable and spindle direction output pins.
-  #define SPINDLE_ENABLE_DDR      DDRG
-  #define SPINDLE_ENABLE_PORT     PORTG
-  #define SPINDLE_ENABLE_BIT      5 // MEGA2560 Digital Pin 4 - Ramps 1.4 Servo 4 Signal pin (D4)
-  #define SPINDLE_DIRECTION_DDR   DDRE
-  #define SPINDLE_DIRECTION_PORT  PORTE
-  #define SPINDLE_DIRECTION_BIT   3 // MEGA2560 Digital Pin 5 - Ramps 1.4 Servo 3 Signal pin (D5)
+  // the original definitions
+  // #define SPINDLE_ENABLE_DDR      DDRG
+  // #define SPINDLE_ENABLE_PORT     PORTG
+  // #define SPINDLE_ENABLE_BIT      5 // MEGA2560 Digital Pin 4 - Ramps 1.4 Servo 4 Signal pin (D4)
+  // #define SPINDLE_DIRECTION_DDR   DDRE
+  // #define SPINDLE_DIRECTION_PORT  PORTE
+  // #define SPINDLE_DIRECTION_BIT   3 // MEGA2560 Digital Pin 5 - Ramps 1.4 Servo 3 Signal pin (D5)
+  // new definitions since I am using these pins for Servos
+  #define SPINDLE_ENABLE_DDR      DDRB
+  #define SPINDLE_ENABLE_PORT     PORTB
+  #define SPINDLE_ENABLE_BIT      1 //D52, was MEGA2560 Digital Pin 4 - Ramps 1.4 Servo 4 Signal pin (D4)
+  #define SPINDLE_DIRECTION_DDR   DDRB
+  #define SPINDLE_DIRECTION_PORT  PORTB
+  #define SPINDLE_DIRECTION_BIT   3 //D50, was MEGA2560 Digital Pin 5 - Ramps 1.4 Servo 3 Signal pin (D5)
+
 
   // Define flood and mist coolant enable output pins.
   #define COOLANT_FLOOD_DDR   DDRB

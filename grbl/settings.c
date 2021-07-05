@@ -306,9 +306,8 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 30: settings.rpm_max = value; spindle_init(); break; // Re-initialize spindle rpm calibration
       case 31: settings.rpm_min = value; spindle_init(); break; // Re-initialize spindle rpm calibration
       case 32:
-        if (int_value) { settings.flags |= BITFLAG_LASER_MODE; }
+        if (int_value) { settings.flags |= BITFLAG_LASER_MODE; return(STATUS_OK);} //don't save the status of the laser mode = 1
         else { settings.flags &= ~BITFLAG_LASER_MODE; }
-        return(STATUS_OK); //don't save the status of the laser mode
         break;
       default:
         return(STATUS_INVALID_STATEMENT);

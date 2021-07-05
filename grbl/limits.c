@@ -30,6 +30,20 @@
   #define HOMING_AXIS_LOCATE_SCALAR  5.0 // Must be > 1 to ensure limit switch is cleared.
 #endif
 
+//interrupts for reading the hard limit switch pins x y and z
+void limitPinInterruptsEnable(){
+  //setup pin change interrupts for RAMPS 1.4 limit switch pins (alnwlsn)
+  EICRA |= (1<<ISC30) | (1<<ISC20); //pin change on int3 (pin 18, ZMIN) and int2 (pin 19, ZMAX)
+  EICRB |= (1<<ISC40) | (1<<ISC50); //pin change on int4 (pin 2, XMAX) and int5 (pin 3, XMIN)
+  EIMSK |= (1<<INT3) | (1<<INT2) | (1<<INT4) | (1<<INT5); //enable int3 and int2 and int4 and int 5 interrupts
+  PCMSK1 |= (1<<PCINT10) | (1<<PCINT9); //pin change mask for PCINT10 (pin 14, YMIN) and PCINT9 (pin 15, YMAX)
+  PCICR |= (1<<PCIF1); //enable pin change interrupt
+}
+void limitPinInterruptsDisable(){
+  EIMSK &= ~(1<<INT3) & ~(1<<INT2) & ~(1<<INT4) & ~(1<<INT5); //disable int3 and int2 and int4 and int 5 interrupts
+  PCICR &= ~(1<<PCIF1); //disable pin change interrupt
+}
+
 void limits_init()
 {
   // Set as input pins
@@ -109,6 +123,84 @@ void limits_init()
       MAX_LIMIT_PORT(5) |= (1<<MAX_LIMIT_BIT(5));  // Enable internal pull-up resistors. Normal high operation.
     #endif
   #endif
+  limitPinInterruptsEnable();
+}
+
+void readLimitPins(){ //thing that reads all the limit pins, and if any are pressed, it halts the CNC with mc_reset(). Only works for Low Side Switching limit switches.
+  limitPinInterruptsDisable();
+  //reads status of limit switch pins xx yy zz
+  uint8_t readPinD = PIND;
+  uint8_t readPinE = PINE;
+  uint8_t readPinJ = PINJ;
+  uint8_t limitPinsState=0xc0; //0b 1 1 ZMAX ZMIN YMAX YMIN XMAX XMIN
+  limitPinsState |= ((readPinE>>PE5)&1);
+  limitPinsState |= ((readPinE>>(PE4))&1)<<1;
+  limitPinsState |= ((readPinJ>>PJ1)&1)<<2;
+  limitPinsState |= ((readPinJ>>PJ0)&1)<<3;
+  limitPinsState |= ((readPinD>>PD3)&1)<<4;
+  limitPinsState |= ((readPinD>>PD2)&1)<<5;
+  limitPinsState ^= 255; //invert all bits
+      // debug - print the state of all the limit switches
+      // printPgmString(PSTR("pins: "));
+      // for(uint8_t y=0; y<=7; y++){
+      //   if((limitPinsState<<y)&0b10000000){
+      //     printPgmString(PSTR("1"));
+      //   }else{
+      //     printPgmString(PSTR("0"));
+      //   }
+      // }
+      // printPgmString(PSTR("\r\n"));
+  //the actual Stop code
+  if(limitPinsState != 0){ //but do it only if any of the pins are not zero
+    if (bit_istrue(settings.flags,BITFLAG_HARD_LIMIT_ENABLE)) {
+        // Ignore limit switches if already in an alarm state or in-process of executing an alarm.
+        // When in the alarm state, Grbl should have been reset or will force a reset, so any pending
+        // moves in the planner and serial buffers are all cleared and newly sent blocks will be
+        // locked out until a homing cycle or a kill lock command. Allows the user to disable the hard
+        // limit setting if their limits are constantly triggering after a reset and move their axes.
+        if ((sys.state != STATE_ALARM) && (sys.state != STATE_HOMING)) {
+          if (!(sys_rt_exec_alarm)) {
+            #ifdef HARD_LIMIT_FORCE_STATE_CHECK
+              // Check limit pin state.
+              if (limits_get_state()) {
+                mc_reset(); // Initiate system kill.
+                system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+              }
+            #else
+              mc_reset(); // Initiate system kill.
+              system_set_exec_alarm(EXEC_ALARM_HARD_LIMIT); // Indicate hard limit critical event
+            #endif
+          }
+        }
+      }
+  }
+  limitPinInterruptsEnable();
+}
+//ISRs for the RAMPS endstop pins
+ISR(INT3_vect){
+  cli();
+  readLimitPins();
+  sei();
+}
+ISR(INT2_vect){
+  cli();
+  readLimitPins();
+  sei();
+}
+ISR(INT4_vect){
+  cli();
+  readLimitPins();
+  sei();
+}
+ISR(INT5_vect){
+  cli();
+  readLimitPins();
+  sei();
+}
+ISR(PCINT1_vect){
+  cli();
+  readLimitPins();
+  sei();
 }
 
 #if N_AXIS == 4
@@ -171,6 +263,42 @@ uint8_t limits_get_state()
   }
 }
 
+// same as limits_get_state, but only pays attention to the MAX limit pins. This is so that, when homing, the cnc does not get stuck on the min limit thinking that it has homed to the max position
+uint8_t limits_get_stateMax()
+{
+  uint8_t limit_state_max = 0;
+  uint8_t limit_state_min = 0;
+  uint8_t pin;
+  uint8_t idx;
+  uint8_t unused_bits = 0xff - (1<<N_AXIS) + 1;
+  #ifdef INVERT_LIMIT_PIN_MASK
+    #error "INVERT_LIMIT_PIN_MASK is not implemented, use INVERT_<MAX|MIN>_LIMIT_PIN_MASK"
+  #endif
+  for (idx=0; idx<N_AXIS; idx++) {
+    pin = *max_limit_pins[idx] & (1<<max_limit_bits[idx]);
+    pin = !pin;
+    #ifdef INVERT_MAX_LIMIT_PIN_MASK
+      if (bit_istrue(INVERT_MAX_LIMIT_PIN_MASK, bit(idx))) { pin = !pin; }
+    #endif
+    if (pin) {
+      limit_state_max |= (1 << idx);
+    }
+    pin = *min_limit_pins[idx] & (1<<min_limit_bits[idx]);
+    pin = !pin;
+    #ifdef INVERT_MIN_LIMIT_PIN_MASK
+      if (bit_istrue(INVERT_MIN_LIMIT_PIN_MASK, bit(idx))) { pin = !pin; }
+    #endif
+    if (pin) {
+      limit_state_min |= (1 << idx);
+    }
+  }
+  if (bit_istrue(settings.flags,BITFLAG_INVERT_LIMIT_PINS)) {
+    return(~((limit_state_max & limit_state_min) | unused_bits));
+  } else {
+    return(limit_state_max); //removed MIN here
+  }
+}
+
 #ifdef ENABLE_RAMPS_HW_LIMITS
   void ramps_hard_limit()
   {
@@ -224,6 +352,8 @@ void limits_go_home(uint8_t cycle_mask)
 {
 
   if (sys.abort) { return; } // Block if system reset has been issued.
+
+  limitPinInterruptsDisable(); //the Halt function for the limit switch pins must be disabled here, since we need those pins now for homing (alnwlsn)
 
   // Initialize plan data struct for homing motion. Spindle and coolant are disabled.
   plan_line_data_t plan_data;
@@ -310,7 +440,7 @@ void limits_go_home(uint8_t cycle_mask)
     do {
       if (approach) {
         // Check limit state. Lock out cycle axes when they change.
-        limit_state = limits_get_state();
+        limit_state = limits_get_stateMax();
         for (idx=0; idx<N_AXIS; idx++) {
           if (axislock[idx] & step_pin[idx]) {
             if (limit_state & (1 << idx)) {
@@ -345,7 +475,7 @@ void limits_go_home(uint8_t cycle_mask)
         // Homing failure condition: Safety door was opened.
         if (rt_exec & EXEC_SAFETY_DOOR) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_DOOR); }
         // Homing failure condition: Limit switch still engaged after pull-off motion
-        if (!approach && (limits_get_state() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
+        if (!approach && (limits_get_stateMax() & cycle_mask)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF); }
         // Homing failure condition: Limit switch not found during approach.
         if (approach && (rt_exec & EXEC_CYCLE_STOP)) { system_set_exec_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH); }
         if (sys_rt_exec_alarm) {
@@ -416,6 +546,8 @@ void limits_go_home(uint8_t cycle_mask)
     }
   }
   sys.step_control = STEP_CONTROL_NORMAL_OP; // Return step control to normal operation.
+
+  limitPinInterruptsEnable(); //and back to limit switches working for the Halt feature (alnwlsn)
 }
 
 

@@ -59,6 +59,7 @@ int main(void)
   stepper_init();  // Configure stepper pins and interrupt timers
   system_init();   // Configure pinout pins and pin-change interrupt
   servo_init();    // Alnwlsn's servo hack
+  laser_init();   // alnwlsn's timer 5 pwm setup - controls PWM for laser
 
   // Initialize axis mask bits (ability to axis renaming and cloning)
   // and global table of axis names.

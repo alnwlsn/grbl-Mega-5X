@@ -306,8 +306,9 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 30: settings.rpm_max = value; spindle_init(); break; // Re-initialize spindle rpm calibration
       case 31: settings.rpm_min = value; spindle_init(); break; // Re-initialize spindle rpm calibration
       case 32:
-        if (int_value) { settings.flags |= BITFLAG_LASER_MODE; return(STATUS_OK);} //don't save the status of the laser mode = 1
+        if (int_value) { settings.flags |= BITFLAG_LASER_MODE; }
         else { settings.flags &= ~BITFLAG_LASER_MODE; }
+        return(STATUS_OK); //don't save the status of the laser mode
         break;
       default:
         return(STATUS_INVALID_STATEMENT);
@@ -325,6 +326,7 @@ void settings_init() {
     settings_restore(SETTINGS_RESTORE_ALL); // Force restore all EEPROM data.
     report_grbl_settings();
   }
+  settings.flags &= ~BITFLAG_LASER_MODE; //force the laser mode to be Off regardless of what's in the EEPROM
 }
 
 

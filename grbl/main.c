@@ -58,8 +58,6 @@ int main(void)
   settings_init(); // Load Grbl settings from EEPROM
   stepper_init();  // Configure stepper pins and interrupt timers
   system_init();   // Configure pinout pins and pin-change interrupt
-  servo_init();    // Alnwlsn's servo hack
-  laser_init();   // alnwlsn's timer 5 pwm setup - controls PWM for laser
 
   // Initialize axis mask bits (ability to axis renaming and cloning)
   // and global table of axis names.
@@ -512,7 +510,9 @@ int main(void)
     coolant_init();
     limits_init();
     probe_init();
-    sleep_init();
+    //sleep_init();
+    servo_init();   // Alnwlsn's servo hack (note that this needs timer3, which is / was used by Sleep, so I commented it out)
+    laser_init();   // alnwlsn's timer 5 pwm setup - controls PWM for laser 
     plan_reset(); // Clear block buffer and planner variables
     st_reset(); // Clear stepper subsystem variables.
 

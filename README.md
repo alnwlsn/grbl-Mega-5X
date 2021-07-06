@@ -1,3 +1,41 @@
+**Alnwlsn's custom version**
+
+This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) with some extra stuff hacked on for my own purposes. I use this on my converted Chinese 3040CNC.
+
+* **A B and C axes** - Provided by grbl-Mega-5X, three extra axes to use with 3 more steppers, in addition to the normal X Y and Z. Used in G commands like normal axes. I use A for the rotary axis that came with my mill, and I want to use one of the extras to drive a 3D printer extruder.
+
+* **Laser Mode** - I added one of those cheap 5.5W laser diode modules to my mill. It's driven by PWM, and most laser machines would normally use the spindle PWM output, but I already have a spindle attached to that. 
+  * Timer5 is unused in normal grbl-Mega-5X, so I used the OC5B pin to run PWM for the laser (9-bit at ~4Khz).
+  * There's already a Laser Mode function in grbl, so I use that to change between spindle PWM and laser PWM ($32=0 - spindle or 1 - laser).
+    *  For safety, I never want to power my laser by accident, so I have grbl ignore the $32 setting in the EEPROM, and always overwrite $32 = 0 when the EEPROM is read. That way, at power up the CNC will always be in spindle mode. You can then change to laser mode with $32 = 1
+    *  Laser power is adjusted with S setting; S0 for minimum power (off) to S512 for maximum power (full on). M3/M4 for laser on (at selected power) and M5 for laser off.
+    *  Per a standard Grbl feature, the laser will not turn on with M3 until the first G1 move, so that you don't burn a hole in your stock by turning on the laser before the laser head is moving.
+
+* **Interrupt Monitored Endstop Switches** - Apparently, this was a feature in standard Grbl, but I didn't find any interrupt code in grbl-Mega-5X. 
+  * grbl-Mega-5X does come with a solution for this, ramps_hard_limit(), which doesn't use interrupts on the endstop limit pins, but works (I think) by checking the limit pins during the Stepper interrupts. I've found this to have a detrimental effect on the stepper performance; seems that the AVR just doesn't have enough juice to do both. 
+  * All the standard limit pins (at least as set up by default for a RAMPS 1.4 pinout) have hardware interrupt capability of some kind. Some have regular interrupts, while a couple only have pin change interrupts. 
+    * I configured all pins for a pin change interrupt. When any are tripped, we measure the state of all the pins and see if any of the endstop switches are pressed. If they are, we trigger the stuff that ramps_hard_limit() did (which is to stop the steppers, raise an alarm, and go into a loop). 
+    * This addition DOES NOT respect the pin settings in cpu_map.h or any of the invert settings. It only works with the pins in the pinout below, and only works with Low Side Switching limit switches (or equivalent). This could probably be improved if I could be bothered. 
+
+* **Control of 8 Servos** - I might have a need to run a couple servos (lifting a pen, opening a clamp, tool changer, whatever), so I added the ability to control servos. This is merged from my first attempt [grbl-Mega-5X-servos](https://github.com/fra589/grbl-Mega-5X-servos)
+  * This works by using a timer and interrupts to toggle some pins, and create the standard hobby servo control pulse signal. This is similar to what the Servo library does on Arduino to drive a bunch of servos from one timer.
+    * TIMER3 is used here, which conflicts with Grbl's Sleep function (which is disabled by default, and I commented out the Init function for sleep in my version so I could use TIMER3). But, if you really need the Sleep functions, you could count cycles of the Servo pulse generator timer. 
+  * You also get 3 new M commands:
+    * M96 - sets the servo position immediately when issued. Works like G0.
+      * Usage: **M96 An Bn Cn Dn Wn Xn Yn Zn** 
+      * where A B C D E W X Y Z refer to the corresponding servo (do not include any servo you don't want to change), and n is the servo position (from 0 to 499 - actual angle this refers to on your servo depends on the type of servo)  
+    * M97 - Starts servo moving smoothly from current position to new position. Works like G1. Non-blocking.
+      * Usage: **M97 An Bn Cn Dn Wn Xn Yn Zn Ts** 
+      * where A B C D E W X Y Z refer to the corresponding servo, n is the servo position, and T is the time of the move, in seconds. This timing uses the time base of the servo signal period, and is therefore completely isolated from the rest of Grbl's stepper control functions. It more or less does the servo move in the background.
+    * M98 - works exactly the same as M97, but instead of starting when the command is issued, it starts with the next G command issued. This makes it possible to (roughly) cordinate motion with a move in the stepper axes (but you need to figure out the correct timings yourself).
+    * The servos don't remember their positions like steppers do, so at boot, all servos will return to position 0.  
+  * I wanted to use the Servo pin headers on the RAMPS 1.4 board, but 2 of them are used for the Spindle Enable and Direction pins, so I moved those functions to other pins.
+
+and here is the pinout that I use:
+![Pinout](https://github.com/alnwlsn/grbl-Mega-5X-alnwlsn/blob/edge/doc/mega-pinouts.png)
+
+***
+
 ![GitHub Logo](https://github.com/fra589/grbl-Mega-5X/blob/edge/doc/images/Mega-5X-logo.svg)
 
 ***

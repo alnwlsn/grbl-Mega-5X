@@ -11,11 +11,13 @@ This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) w
     *  Laser power is adjusted with S setting; S0 for minimum power (off) to S512 for maximum power (full on). M3/M4 for laser on (at selected power) and M5 for laser off.
     *  Per a standard Grbl feature, the laser will not turn on with M3 until the first G1 move, so that you don't burn a hole in your stock by turning on the laser before the laser head is moving.
 
-* **Interrupt Monitored Endstop Switches** - Apparently, this was a feature in standard Grbl, but I didn't find any interrupt code in grbl-Mega-5X. 
+* **Interrupt Monitored Endstop Switches** - Immediately makes all steppers stop moving when an endstop is hit. Apparently, this was a feature in standard Grbl, but I didn't find any interrupt code in grbl-Mega-5X. 
   * grbl-Mega-5X does come with a solution for this, ramps_hard_limit(), which doesn't use interrupts on the endstop limit pins, but works (I think) by checking the limit pins during the Stepper interrupts. I've found this to have a detrimental effect on the stepper performance; seems that the AVR just doesn't have enough juice to do both. 
   * All the standard limit pins (at least as set up by default for a RAMPS 1.4 pinout) have hardware interrupt capability of some kind. Some have regular interrupts, while a couple only have pin change interrupts. 
     * I configured all pins for a pin change interrupt. When any are tripped, we measure the state of all the pins and see if any of the endstop switches are pressed. If they are, we trigger the stuff that ramps_hard_limit() did (which is to stop the steppers, raise an alarm, and go into a loop). 
     * This addition DOES NOT respect the pin settings in cpu_map.h or any of the invert settings. It only works with the pins in the pinout below, and only works with Low Side Switching limit switches (or equivalent). This could probably be improved if I could be bothered. 
+  * These interrupts are disabled during a Homing cycle (since that uses the endstops to home the machine). 
+    * also, homing cycle now only recognizes the Home position at the Max limit endstops for each axis. Previously, it didn't, which made the homing cycle break when trying to home with an axis stuck on the Min position, thinking that it was actually at the Max one.  
 
 * **Control of 8 Servos** - I might have a need to run a couple servos (lifting a pen, opening a clamp, tool changer, whatever), so I added the ability to control servos. This is merged from my first attempt [grbl-Mega-5X-servos](https://github.com/fra589/grbl-Mega-5X-servos)
   * This works by using a timer and interrupts to toggle some pins, and create the standard hobby servo control pulse signal. This is similar to what the Servo library does on Arduino to drive a bunch of servos from one timer.

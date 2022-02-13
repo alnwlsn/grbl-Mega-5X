@@ -62,6 +62,7 @@ void spindle_stop() {
     SPINDLE_ENABLE_PORT &= ~(1 << SPINDLE_ENABLE_BIT);  // Set pin to low
 #endif
     laser_duty(0);  //disable PWM for laser
+    laserDACOut(0);
 }
 
 // Sets spindle speed PWM output and enable pin, if configured. Called by spindle_set_state()
@@ -140,11 +141,9 @@ uint16_t spindle_compute_pwm_value(float rpm)  // Mega2560 PWM register is 16-bi
     rpm *= (0.010 * sys.spindle_speed_ovr);  // Scale by spindle speed override value.
     if (settings.flags & BITFLAG_LASER_MODE) {
         // Process for laser
-        if (rpm >= 512) {
-            rpm = 512;
-        }
         sys.spindle_speed = rpm;
-        laser_duty(rpm);
+        laser_duty(rpm/8); //matches 0-4095
+        laserDACOut(rpm);
         pwm_value = 0;  //send 0 to the spindle pwm control
     } else {
         // Process for spindle

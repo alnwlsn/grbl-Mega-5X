@@ -64,6 +64,7 @@
 #include "sleep.h"
 #include "servo.h"
 #include "laser.h"
+#include "laser-dac.h"
 
 // ---------------------------------------------------------------------------------------
 // COMPILE-TIME ERROR CHECKING OF DEFINE VALUES:

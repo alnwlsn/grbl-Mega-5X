@@ -308,7 +308,7 @@ uint8_t settings_store_global_setting(uint8_t parameter, float value) {
       case 32:
         if (int_value) { settings.flags |= BITFLAG_LASER_MODE; }
         else { settings.flags &= ~BITFLAG_LASER_MODE; }
-        return(STATUS_OK); //don't save the status of the laser mode
+        //return(STATUS_OK); //don't save the status of the laser mode
         break;
       default:
         return(STATUS_INVALID_STATEMENT);

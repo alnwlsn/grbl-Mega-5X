@@ -9,9 +9,10 @@ This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) w
 * **Laser Mode** - I added one of those cheap 5.5W laser diode modules to my mill. It's driven by PWM, and most laser machines would normally use the spindle PWM output, but I already have a spindle attached to that. 
   * Timer5 is unused in normal grbl-Mega-5X, so I used the OC5B pin to run PWM for the laser (9-bit at ~4Khz).
   * There's already a Laser Mode function in grbl, so I use that to change between spindle PWM and laser PWM ($32=0 - spindle or 1 - laser).
-    *  For safety, I never want to power my laser by accident, so I have grbl ignore the $32 setting in the EEPROM, and always overwrite $32 = 0 when the EEPROM is read. That way, at power up the CNC will always be in spindle mode. You can then change to laser mode with $32 = 1
-    *  Laser power is adjusted with S setting; S0 for minimum power (off) to S512 for maximum power (full on). M3/M4 for laser on (at selected power) and M5 for laser off.
-    *  Per a standard Grbl feature, the laser will not turn on with M3 until the first G1 move, so that you don't burn a hole in your stock by turning on the laser before the laser head is moving.
+  * **In the K40 version, $32 is saved in EEPROM. My K40 will always be a laser. [citation needed].**
+    *  ~~For safety, I never want to power my laser by accident, so I have grbl ignore the $32 setting in the EEPROM, and always overwrite $32 = 0 when the EEPROM is read. That way, at power up the CNC will always be in spindle mode. You can then change to laser mode with $32 = 1~~
+    *  ~~Laser power is adjusted with S setting; S0 for minimum power (off) to S512 for maximum power (full on). M3/M4 for laser on (at selected power) and M5 for laser off.~~
+    *  ~~Per a standard Grbl feature, the laser will not turn on with M3 until the first G1 move, so that you don't burn a hole in your stock by turning on the laser before the laser head is moving.~~
 
 * **Interrupt Monitored Endstop Switches** - Immediately makes all steppers stop moving when an endstop is hit. Apparently, this was a feature in standard Grbl, but I didn't find any interrupt code in grbl-Mega-5X. 
   * grbl-Mega-5X does come with a solution for this, ramps_hard_limit(), which doesn't use interrupts on the endstop limit pins, but works (I think) by checking the limit pins during the Stepper interrupts. I've found this to have a detrimental effect on the stepper performance; seems that the AVR just doesn't have enough juice to do both. 
@@ -20,6 +21,7 @@ This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) w
     * This addition DOES NOT respect the pin settings in cpu_map.h or any of the invert settings. It only works with the pins in the pinout below, and only works with Low Side Switching limit switches (or equivalent). This could probably be improved if I could be bothered. 
   * These interrupts are disabled during a Homing cycle (since that uses the endstops to home the machine). 
     * also, homing cycle now only recognizes the Home position at the Max limit endstops for each axis. Previously, it didn't, which made the homing cycle break when trying to home with an axis stuck on the Min position, thinking that it was actually at the Max one.  
+  * **In the K40 version, disabled the z axis home.**
 
 * **Control of 8 Servos** - I might have a need to run a couple servos (lifting a pen, opening a clamp, tool changer, whatever), so I added the ability to control servos. This is merged from my first attempt [grbl-Mega-5X-servos](https://github.com/fra589/grbl-Mega-5X-servos)
   * This works by using a timer and interrupts to toggle some pins, and create the standard hobby servo control pulse signal. This is similar to what the Servo library does on Arduino to drive a bunch of servos from one timer.

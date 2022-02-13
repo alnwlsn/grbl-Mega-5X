@@ -2,6 +2,8 @@
 
 This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) with some extra stuff hacked on for my own purposes. I use this on my converted Chinese 3040CNC.
 
+**K40 Laser Branch** - I am now trying to use this GRBL on my new K40 laser. The CO2 laser driver it uses takes an analog voltage in, not PWM, so I hooked up a I2C DAC to provide the signal. This is kind of hacky, hence why it's in the K40 branch
+
 * **A B and C axes** - Provided by grbl-Mega-5X, three extra axes to use with 3 more steppers, in addition to the normal X Y and Z. Used in G commands like normal axes. I use A for the rotary axis that came with my mill, and I want to use one of the extras to drive a 3D printer extruder.
 
 * **Laser Mode** - I added one of those cheap 5.5W laser diode modules to my mill. It's driven by PWM, and most laser machines would normally use the spindle PWM output, but I already have a spindle attached to that. 

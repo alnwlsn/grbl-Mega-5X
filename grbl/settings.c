@@ -326,7 +326,7 @@ void settings_init() {
     settings_restore(SETTINGS_RESTORE_ALL); // Force restore all EEPROM data.
     report_grbl_settings();
   }
-  settings.flags &= ~BITFLAG_LASER_MODE; //force the laser mode to be Off regardless of what's in the EEPROM
+  //settings.flags &= ~BITFLAG_LASER_MODE; //force the laser mode to be Off regardless of what's in the EEPROM
 }
 
 

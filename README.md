@@ -22,6 +22,7 @@ This is mostly standard [grbl-Mega-5X](https://github.com/fra589/grbl-Mega-5X) w
   * These interrupts are disabled during a Homing cycle (since that uses the endstops to home the machine). 
     * also, homing cycle now only recognizes the Home position at the Max limit endstops for each axis. Previously, it didn't, which made the homing cycle break when trying to home with an axis stuck on the Min position, thinking that it was actually at the Max one.  
   * **In the K40 version, disabled the z axis home.**
+    * Also, I had to rewire the end stop switches that came with the K40 so that they both close contacts to GND when triggered. I tried to make the change to inverted pins in software, but I could never get it to work, even with stock Grbl. Don't know why.
 
 * **Control of 8 Servos** - I might have a need to run a couple servos (lifting a pen, opening a clamp, tool changer, whatever), so I added the ability to control servos. This is merged from my first attempt [grbl-Mega-5X-servos](https://github.com/fra589/grbl-Mega-5X-servos)
   * This works by using a timer and interrupts to toggle some pins, and create the standard hobby servo control pulse signal. This is similar to what the Servo library does on Arduino to drive a bunch of servos from one timer.

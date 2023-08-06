@@ -44,7 +44,7 @@
 #define BAUD_RATE 115200
 
 // Axis array index values. Must start with 0 and be continuous.
-#define N_AXIS 6            // Number of axes (3 to 6)
+#define N_AXIS 3            // Number of axes (3 to 6)
 #define N_AXIS_LINEAR 3     // Number of linears axis
 
 #define AXIS_1 0        // Axis indexing value. Must start with 0 and be continuous.
@@ -190,8 +190,9 @@
   //#define HOMING_CYCLE_5 (1<<AXIS_6) // Home 6th axis (C)
   #define HOMING_CYCLE_0 ((1<<AXIS_1)|(1<<AXIS_2)) //for laser, need only to home x/y
 #else // Classic 3 axis
-  #define HOMING_CYCLE_0 (1<<AXIS_3) // Home Z axis first to clear workspace.
-  #define HOMING_CYCLE_1 ((1<<AXIS_1)|(1<<AXIS_2))     // OPTIONAL: uncomment to move X,Y at the same time.
+  #define HOMING_CYCLE_0 ((1<<AXIS_1)|(1<<AXIS_2))  // NOT COMPATIBLE WITH COREXY: Homes both X-Y in one cycle.
+  // #define HOMING_CYCLE_0 (1<<AXIS_3) // Home Z axis first to clear workspace.
+  // #define HOMING_CYCLE_1 ((1<<AXIS_1)|(1<<AXIS_2))     // OPTIONAL: uncomment to move X,Y at the same time.
   //#define HOMING_CYCLE_1 (1<<AXIS_1) // Home X axis  // OPTIONAL: uncomment to move only X at a time.
   //#define HOMING_CYCLE_2 (1<<AXIS_2) // Home Y axis  // OPTIONAL: uncomment to move only Y at a time.
 #endif
